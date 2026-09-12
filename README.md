@@ -1,5 +1,5 @@
 # 🎓 ClassPulse — Smart Google Classroom Timetable & Academic Planner
-
+vercel link: https://classpulse-omega.vercel.app/
 > A production-ready, full-stack academic assistant that connects with Google Classroom to automatically construct interactive weekly timetables, prioritize upcoming quizzes and assignments on a Deadline Radar, and sync schedules directly to your phone calendar (.ics / Google Calendar).
 
 ![Next.js](https://img.shields.io/badge/Next.js-14.2-black?style=for-the-badge&logo=next.js)
@@ -69,45 +69,6 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) in your browser. The app defaults to **Demo Mode** for instantaneous testing.
 
----
-
-## 🌐 Deploy to Vercel (1-Click)
-
-ClassPulse is configured for seamless zero-config deployment on Vercel:
-
-1. Push your repository to GitHub:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit of ClassPulse"
-   git branch -M main
-   git remote add origin https://github.com/your-username/classpulse.git
-   git push -u origin main
-   ```
-2. Go to [Vercel.com](https://vercel.com) and click **"Add New Project"**.
-3. Import your `classpulse` repository.
-4. Click **Deploy**. Vercel will automatically build and deploy the Next.js application, giving you a live `https://classpulse-*.vercel.app` URL to share on your resume and society applications!
-
----
-
-## 🔑 Configuring Google Classroom OAuth (Optional for Live Mode)
-
-To enable live Google Classroom synchronization for your university account:
-
-1. Visit the [Google Cloud Console](https://console.cloud.google.com/).
-2. Create a new project named **ClassPulse**.
-3. Enable the **Google Classroom API** under **APIs & Services** > **Library**.
-4. Configure the **OAuth Consent Screen** (User Type: *External* or *Internal* to your university domain).
-5. Add the following scopes:
-   - `https://www.googleapis.com/auth/classroom.courses.readonly`
-   - `https://www.googleapis.com/auth/classroom.coursework.me.readonly`
-   - `https://www.googleapis.com/auth/classroom.announcements.readonly`
-6. Go to **Credentials** > **Create Credentials** > **OAuth client ID** (Web application).
-7. Add Authorized JavaScript origins: `http://localhost:3000` (and your Vercel URL).
-8. Copy your Client ID into `.env.local`:
-   ```env
-   NEXT_PUBLIC_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-   ```
 
 ---
 
