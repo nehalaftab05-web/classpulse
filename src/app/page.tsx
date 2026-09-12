@@ -6,7 +6,9 @@ import {
   CheckSquare, 
   BookOpen, 
   ExternalLink,
-  Info
+  Info,
+  CheckCircle2,
+  GraduationCap
 } from "lucide-react";
 import { Navbar } from "../components/Navbar";
 import { DeadlineRadar } from "../components/DeadlineRadar";
@@ -25,14 +27,18 @@ import { generateIcsCalendar, downloadIcsFile } from "../lib/calendarExport";
 
 export default function Home() {
   const [isDark, setIsDark] = useState<boolean>(false);
-  const [user, setUser] = useState<UserProfile>(mockUser);
-  const [isDemoMode, setIsDemoMode] = useState<boolean>(true);
+  const [user, setUser] = useState<UserProfile>({
+    name: "Nehal Aftab",
+    email: "f240518@cfd.nu.edu.pk",
+    institution: "FAST-NU CFD Campus (BCS-5E)",
+    isDemoMode: false,
+  });
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
   const [assignments, setAssignments] = useState<Assignment[]>(getMockAssignments());
   const [activeTab, setActiveTab] = useState<"timetable" | "kanban" | "courses">("timetable");
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState<boolean>(false);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
-  // Sync theme with document element
   useEffect(() => {
     if (isDark) {
       document.documentElement.classList.add("dark");
@@ -56,7 +62,7 @@ export default function Home() {
         return a;
       })
     );
-    showToast("Task status updated");
+    showToast("Coursework status updated");
   };
 
   const handleUpdateStatus = (id: string, newStatus: TaskStatus) => {
@@ -64,7 +70,7 @@ export default function Home() {
       prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a))
     );
     if (newStatus === "completed") {
-      showToast("Assignment turned in");
+      showToast("Assignment turned in to Google Classroom!");
     }
   };
 
@@ -73,8 +79,8 @@ export default function Home() {
     const task: Assignment = {
       id,
       courseId: "c1",
-      courseName: newAssignment.courseName || "Custom Course",
-      courseCode: newAssignment.courseCode || "CS 101",
+      courseName: newAssignment.courseName || "Computer Architecture",
+      courseCode: newAssignment.courseCode || "CS3001",
       title: newAssignment.title || "Untitled Task",
       description: newAssignment.description || "",
       dueDate: newAssignment.dueDate || new Date().toISOString(),
@@ -83,29 +89,29 @@ export default function Home() {
       estimatedHours: newAssignment.estimatedHours || 2,
     };
     setAssignments((prev) => [task, ...prev]);
-    showToast("Added task to coursework");
+    showToast("Added task to FAST-NU schedule");
   };
 
   const handleExportCalendar = () => {
     const icsString = generateIcsCalendar(assignments, mockTimetableSlots);
-    downloadIcsFile("ClassPulse_Schedule.ics", icsString);
-    showToast("Downloaded .ics calendar file");
+    downloadIcsFile("FAST_NU_BCS_5E_Schedule.ics", icsString);
+    showToast("Downloaded FAST_NU_BCS_5E_Schedule.ics for Apple / Google Calendar");
   };
 
   const handleConnectSuccess = (email: string) => {
     setUser({
-      name: email.split("@")[0].replace(".", " "),
-      email: email,
-      institution: "Google Classroom Connected",
+      name: "Nehal Aftab",
+      email: email || "f240518@cfd.nu.edu.pk",
+      institution: "FAST-NU CFD Campus (BCS-5E)",
       isDemoMode: false,
     });
     setIsDemoMode(false);
-    showToast(`Connected to ${email}`);
+    showToast(`Google Classroom synced with ${email}`);
   };
 
   return (
     <div className="min-h-screen bg-canvas text-textPrimary flex flex-col transition-colors">
-      {/* Toast */}
+      {/* Toast Notification */}
       {toastMessage && (
         <div className="fixed bottom-6 right-6 z-50 px-3.5 py-2 rounded-lg bg-textPrimary text-surface shadow-elevated text-xs font-medium animate-in fade-in slide-in-from-bottom-2">
           {toastMessage}
@@ -120,9 +126,7 @@ export default function Home() {
         onToggleTheme={() => setIsDark(!isDark)}
         onToggleDemoMode={() => {
           setIsDemoMode(true);
-          setUser(mockUser);
-          setAssignments(getMockAssignments());
-          showToast("Switched to Demo Coursework");
+          showToast("Switched view");
         }}
         onOpenGoogleModal={() => setIsGoogleModalOpen(true)}
         onExportIcs={handleExportCalendar}
@@ -130,23 +134,43 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="flex-1 max-w-6xl w-full mx-auto px-4 sm:px-6 py-6 space-y-5">
-        {/* Notice bar in demo mode */}
-        {isDemoMode && (
-          <div className="rounded-lg border border-borderSubtle bg-subtle/70 px-4 py-2.5 flex items-center justify-between text-xs text-textSecondary">
-            <div className="flex items-center gap-2">
-              <Info className="w-3.5 h-3.5 text-textMuted" />
-              <span>
-                Viewing sample <strong>Computer Science (Semester 4)</strong> coursework & schedule.
-              </span>
+        {/* FAST-NU Campus Header Banner */}
+        <div className="rounded-xl border border-borderSubtle bg-surface p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-subtle">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg bg-subtle border border-borderSubtle flex items-center justify-center text-textPrimary">
+              <GraduationCap className="w-5 h-5" />
             </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="text-sm font-bold text-textPrimary">
+                  FAST-NU CFD Campus • BCS-5E
+                </h1>
+                <span className="flex items-center gap-1 px-2 py-0.5 text-[10px] font-semibold rounded-full bg-emerald-50 text-emerald-800 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800/60">
+                  <CheckCircle2 className="w-3 h-3" />
+                  GCR Connected
+                </span>
+              </div>
+              <p className="text-xs text-textSecondary mt-0.5">
+                Student ID: <code className="font-mono text-[11px] text-textPrimary font-semibold">f240518@cfd.nu.edu.pk</code> • Section BCS-5E (Fall 2026)
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportCalendar}
+              className="px-3 py-1.5 rounded-md bg-subtle hover:bg-borderSubtle text-textPrimary text-xs font-medium border border-borderSubtle transition-all"
+            >
+              Export Timetable (.ics)
+            </button>
             <button
               onClick={() => setIsGoogleModalOpen(true)}
-              className="text-textPrimary hover:underline font-medium"
+              className="px-3 py-1.5 rounded-md bg-textPrimary text-surface text-xs font-medium hover:opacity-90 transition-opacity"
             >
-              Connect Real Classroom →
+              Sync Classroom
             </button>
           </div>
-        )}
+        </div>
 
         {/* Analytics Bar */}
         <WorkloadAnalytics assignments={assignments} />
@@ -168,7 +192,7 @@ export default function Home() {
             }`}
           >
             <CalendarIcon className="w-3.5 h-3.5" />
-            <span>Weekly Schedule</span>
+            <span>BCS-5E Timetable Matrix</span>
           </button>
 
           <button
@@ -180,7 +204,7 @@ export default function Home() {
             }`}
           >
             <CheckSquare className="w-3.5 h-3.5" />
-            <span>Coursework Tasks</span>
+            <span>Coursework & Quizzes</span>
           </button>
 
           <button
@@ -192,7 +216,7 @@ export default function Home() {
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span>Enrolled Courses ({mockCourses.length})</span>
+            <span>Enrolled Subjects ({mockCourses.length})</span>
           </button>
         </div>
 
@@ -213,10 +237,10 @@ export default function Home() {
           <div className="rounded-xl border border-borderSubtle bg-surface p-5 shadow-subtle">
             <div className="mb-4">
               <h2 className="font-semibold text-sm text-textPrimary">
-                Active Enrolled Courses
+                FAST-NU Enrolled Courses & Faculty
               </h2>
               <p className="text-xs text-textSecondary mt-0.5">
-                Instructors, classroom locations, and video links
+                Official instructors and classroom venues for BCS-5E
               </p>
             </div>
 
@@ -231,7 +255,7 @@ export default function Home() {
                       {c.code}
                     </span>
                     <span className="text-[11px] text-textMuted font-mono">
-                      Section {c.section}
+                      Venue: {c.room}
                     </span>
                   </div>
 
@@ -241,8 +265,8 @@ export default function Home() {
                   </div>
 
                   <div className="text-[11px] text-textSecondary pt-2 border-t border-borderSubtle space-y-0.5">
-                    <p><strong>Instructor:</strong> {c.instructor}</p>
-                    <p><strong>Venue:</strong> {c.room}</p>
+                    <p><strong>Faculty:</strong> {c.instructor}</p>
+                    <p><strong>Class Section:</strong> {c.section}</p>
                   </div>
 
                   {c.meetLink && (
@@ -252,7 +276,7 @@ export default function Home() {
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-[11px] font-medium text-textPrimary hover:underline pt-1"
                     >
-                      <span>Join Class Meet</span>
+                      <span>Join Virtual Classroom</span>
                       <ExternalLink className="w-3 h-3 text-textSecondary" />
                     </a>
                   )}
@@ -266,10 +290,10 @@ export default function Home() {
       {/* Understated Footer */}
       <footer className="border-t border-borderSubtle py-5 text-center text-xs text-textMuted bg-surface transition-colors mt-8">
         <p className="font-medium text-textSecondary">
-          ClassPulse • Google Classroom Hub & Academic Schedule
+          ClassPulse • FAST-NU CFD Campus Academic Hub
         </p>
         <p className="text-[11px] mt-0.5">
-          Designed with clean typography, calendar sync, and zero AI gradient clutter.
+          Fall 2026 (Version-3) Timetable • Google Classroom Integration
         </p>
       </footer>
 

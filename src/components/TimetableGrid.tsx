@@ -7,7 +7,8 @@ import {
   MapPin, 
   User, 
   Clock,
-  ExternalLink
+  ExternalLink,
+  Sparkles
 } from "lucide-react";
 import { TimetableSlot, Course } from "../types/classroom";
 
@@ -38,11 +39,16 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({ slots, courses }) 
       {/* Header & Filter pills */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-5">
         <div>
-          <h2 className="font-semibold text-sm text-textPrimary">
-            Weekly Class Schedule
-          </h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold text-sm text-textPrimary">
+              FAST-NU CFD Campus • BCS-5E
+            </h2>
+            <span className="px-2 py-0.5 text-[10px] font-mono rounded bg-subtle text-textSecondary border border-borderSubtle">
+              Fall 2026 (v3)
+            </span>
+          </div>
           <p className="text-xs text-textSecondary mt-0.5">
-            Spring 2026 • 18 Credit Hours enrolled
+            Class timetable w.e.f. August 31, 2026 • 6 Registered Courses
           </p>
         </div>
 
@@ -56,7 +62,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({ slots, courses }) 
                 : "text-textSecondary hover:text-textPrimary hover:bg-subtle"
             }`}
           >
-            All
+            All Courses
           </button>
           {courses.map((c) => (
             <button
@@ -84,48 +90,51 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({ slots, courses }) 
           return (
             <div
               key={day.id}
-              className="flex flex-col rounded-lg border border-borderSubtle bg-canvas/50 p-2.5 min-h-[340px]"
+              className="flex flex-col rounded-lg border border-borderSubtle bg-canvas/50 p-2.5 min-h-[380px]"
             >
               {/* Day Header */}
               <div className="pb-2 mb-2.5 border-b border-borderSubtle flex items-center justify-between">
-                <span className="font-medium text-xs text-textPrimary">
+                <span className="font-semibold text-xs text-textPrimary">
                   {day.name}
                 </span>
                 <span className="text-[10px] font-mono text-textMuted">
-                  {daySlots.length} {daySlots.length === 1 ? "class" : "classes"}
+                  {daySlots.length === 0 ? "Off" : `${daySlots.length} sessions`}
                 </span>
               </div>
 
               {/* Slots */}
-              <div className="flex-1 flex flex-col gap-2">
+              <div className="flex-1 flex flex-col gap-2.5">
                 {daySlots.length === 0 ? (
-                  <div className="flex-1 flex items-center justify-center p-4">
-                    <span className="text-[11px] text-textMuted italic">Free day</span>
+                  <div className="flex-1 flex flex-col items-center justify-center p-4 text-center border border-dashed border-borderSubtle rounded-lg bg-subtle/30">
+                    <span className="text-xs font-medium text-textSecondary">No scheduled lectures</span>
+                    <span className="text-[11px] text-textMuted mt-1">Study / Project Day</span>
                   </div>
                 ) : (
                   daySlots.map((slot) => (
                     <div
                       key={slot.id}
                       onClick={() => setSelectedSlot(slot)}
-                      className={`p-2.5 rounded-md border text-left cursor-pointer transition-all duration-150 hover:shadow-subtle ${slot.color}`}
+                      className={`p-3 rounded-lg border text-left cursor-pointer transition-all duration-150 hover:shadow-subtle ${slot.color}`}
                     >
-                      <div className="flex items-center justify-between text-[10px] font-mono opacity-80 mb-1">
-                        <span>{slot.startTime} – {slot.endTime}</span>
-                        <span className="uppercase text-[9px] font-semibold">{slot.type}</span>
-                      </div>
-
-                      <h4 className="font-medium text-xs leading-snug">
-                        {slot.courseCode}: {slot.courseName}
-                      </h4>
-
-                      <div className="flex items-center justify-between text-[10px] opacity-75 mt-2 pt-1.5 border-t border-black/5 dark:border-white/10">
-                        <span className="flex items-center gap-1">
-                          <MapPin className="w-2.5 h-2.5" />
+                      <div className="flex items-center justify-between text-[10px] font-mono opacity-85 mb-1.5">
+                        <span className="font-semibold">{slot.startTime} – {slot.endTime}</span>
+                        <span className="uppercase text-[9px] font-bold px-1.5 py-0.5 rounded bg-black/5 dark:bg-white/10">
                           {slot.room}
                         </span>
+                      </div>
+
+                      <h4 className="font-semibold text-xs leading-snug">
+                        {slot.courseName}
+                      </h4>
+
+                      <div className="flex items-center justify-between text-[11px] opacity-80 mt-2.5 pt-1.5 border-t border-black/5 dark:border-white/10">
+                        <span className="flex items-center gap-1 font-medium">
+                          <User className="w-3 h-3 opacity-70" />
+                          {slot.instructor}
+                        </span>
                         {slot.meetLink && (
-                          <span className="flex items-center gap-0.5 font-medium text-emerald-700 dark:text-emerald-300">
-                            <Video className="w-2.5 h-2.5" />
+                          <span className="flex items-center gap-0.5 font-semibold text-emerald-700 dark:text-emerald-300 text-[10px]">
+                            <Video className="w-3 h-3" />
                             Meet
                           </span>
                         )}
@@ -151,10 +160,10 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({ slots, courses }) 
           >
             <div className="flex items-start justify-between">
               <div>
-                <span className="px-2 py-0.5 text-[10px] font-mono font-medium rounded bg-subtle text-textSecondary border border-borderSubtle uppercase">
+                <span className="px-2 py-0.5 text-[10px] font-mono font-bold rounded bg-subtle text-textSecondary border border-borderSubtle uppercase">
                   {selectedSlot.courseCode} • {selectedSlot.type}
                 </span>
-                <h3 className="text-sm font-semibold text-textPrimary mt-1.5">
+                <h3 className="text-sm font-bold text-textPrimary mt-1.5">
                   {selectedSlot.courseName}
                 </h3>
               </div>
@@ -166,7 +175,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({ slots, courses }) 
               </button>
             </div>
 
-            <div className="space-y-2 text-xs text-textSecondary pt-2 border-t border-borderSubtle">
+            <div className="space-y-2.5 text-xs text-textSecondary pt-2 border-t border-borderSubtle">
               <div className="flex items-center gap-2">
                 <Clock className="w-3.5 h-3.5 text-textMuted" />
                 <span>
@@ -176,13 +185,13 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({ slots, courses }) 
               <div className="flex items-center gap-2">
                 <MapPin className="w-3.5 h-3.5 text-textMuted" />
                 <span>
-                  <strong>Room:</strong> {selectedSlot.room}
+                  <strong>Classroom / Venue:</strong> {selectedSlot.room}
                 </span>
               </div>
               <div className="flex items-center gap-2">
                 <User className="w-3.5 h-3.5 text-textMuted" />
                 <span>
-                  <strong>Instructor:</strong> {selectedSlot.instructor}
+                  <strong>Course Faculty:</strong> {selectedSlot.instructor}
                 </span>
               </div>
             </div>
@@ -192,10 +201,10 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({ slots, courses }) 
                 href={selectedSlot.meetLink}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-md bg-textPrimary hover:opacity-90 text-surface font-medium text-xs transition-opacity"
+                className="flex items-center justify-center gap-1.5 w-full py-2 px-3 rounded-md bg-textPrimary hover:opacity-90 text-surface font-semibold text-xs transition-opacity"
               >
                 <Video className="w-3.5 h-3.5" />
-                Join Video Lecture
+                Join Virtual Class
               </a>
             )}
 
@@ -203,7 +212,7 @@ export const TimetableGrid: React.FC<TimetableGridProps> = ({ slots, courses }) 
               onClick={() => setSelectedSlot(null)}
               className="w-full py-1.5 px-3 rounded-md bg-subtle hover:bg-borderSubtle text-textSecondary text-xs transition-colors"
             >
-              Done
+              Close
             </button>
           </div>
         </div>
