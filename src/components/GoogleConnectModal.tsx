@@ -4,12 +4,16 @@ import React, { useState, useEffect } from "react";
 import { 
   Lock, 
   ExternalLink, 
-  ArrowRight,
-  ShieldCheck,
-  AlertCircle,
-  CheckCircle2,
-  RefreshCw,
-  Key
+  ArrowRight, 
+  ShieldCheck, 
+  AlertCircle, 
+  CheckCircle2, 
+  RefreshCw, 
+  Key,
+  HelpCircle,
+  Sparkles,
+  Copy,
+  Check
 } from "lucide-react";
 import { fetchLiveGoogleClassroom } from "../lib/googleClassroom";
 import { Course, Assignment } from "../types/classroom";
@@ -31,15 +35,15 @@ export const GoogleConnectModal: React.FC<GoogleConnectModalProps> = ({
   onClose,
   onSyncSuccess,
 }) => {
-  const [activeTab, setActiveTab] = useState<"oauth" | "token">("oauth");
+  const [activeTab, setActiveTab] = useState<"token" | "oauth">("token");
   const [clientId, setClientId] = useState("");
   const [manualToken, setManualToken] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [studentEmail, setStudentEmail] = useState("f240518@cfd.nu.edu.pk");
+  const [copiedScope, setCopiedScope] = useState(false);
 
   useEffect(() => {
-    // Check if client ID is set in env
     const envClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
     if (envClientId) {
       setClientId(envClientId);
@@ -48,19 +52,54 @@ export const GoogleConnectModal: React.FC<GoogleConnectModalProps> = ({
 
   if (!isOpen) return null;
 
-  // 1. Google Identity Services Real OAuth2 Flow
+  const copyScopes = () => {
+    navigator.clipboard.writeText(
+      "https://www.googleapis.com/auth/classroom.courses.readonly https://www.googleapis.com/auth/classroom.coursework.me.readonly"
+    );
+    setCopiedScope(true);
+    setTimeout(() => setCopiedScope(false), 2000);
+  };
+
+  // 1. Direct Access Token Fetch (Fastest, zero setup via OAuth Playground)
+  const handleSyncWithToken = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualToken.trim()) {
+      setErrorMessage("Please paste your Google OAuth Access Token.");
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+      setErrorMessage(null);
+      const data = await fetchLiveGoogleClassroom(manualToken.trim());
+      onSyncSuccess({
+        courses: data.courses,
+        assignments: data.assignments,
+        email: studentEmail,
+      });
+      setIsLoading(false);
+      onClose();
+    } catch (err: any) {
+      setIsLoading(false);
+      setErrorMessage(
+        err.message || "Invalid or expired Google token. Please check that you selected Classroom scopes."
+      );
+    }
+  };
+
+  // 2. Google Identity Services Real OAuth2 Flow
   const handleInitiateOAuth = () => {
     setErrorMessage(null);
 
     if (!clientId.trim()) {
       setErrorMessage(
-        "Please provide a Google Cloud Client ID (or use the Access Token tab). See below for instructions."
+        "Google requires a Client ID from Google Cloud Console to open the popup. Alternatively, use the '1-Click Token (No Setup)' tab above!"
       );
       return;
     }
 
     if (typeof window === "undefined" || !window.google?.accounts?.oauth2) {
-      setErrorMessage("Google Identity Services script is still loading. Please try again in a few seconds.");
+      setErrorMessage("Google Identity Services script is loading. Please try again in 3 seconds.");
       return;
     }
 
@@ -100,31 +139,9 @@ export const GoogleConnectModal: React.FC<GoogleConnectModalProps> = ({
     }
   };
 
-  // 2. Direct Access Token Fetch
-  const handleSyncWithToken = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!manualToken.trim()) return;
-
-    try {
-      setIsLoading(true);
-      setErrorMessage(null);
-      const data = await fetchLiveGoogleClassroom(manualToken.trim());
-      onSyncSuccess({
-        courses: data.courses,
-        assignments: data.assignments,
-        email: studentEmail,
-      });
-      setIsLoading(false);
-      onClose();
-    } catch (err: any) {
-      setIsLoading(false);
-      setErrorMessage(err.message || "Invalid or expired Google OAuth Token.");
-    }
-  };
-
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4 animate-in fade-in"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in"
       onClick={onClose}
     >
       <div
@@ -137,24 +154,14 @@ export const GoogleConnectModal: React.FC<GoogleConnectModalProps> = ({
               Connect FAST Google Classroom
             </h3>
             <p className="text-xs text-textSecondary mt-0.5">
-              Live coursework & assignment synchronization via Google Classroom API
+              Live sync for student: <span className="font-mono text-textPrimary font-medium">{studentEmail}</span>
             </p>
           </div>
           <button onClick={onClose} className="text-textSecondary hover:text-textPrimary text-xs p-1">✕</button>
         </div>
 
-        {/* Tab switch */}
+        {/* Tab switcher */}
         <div className="flex items-center gap-1 border-b border-borderSubtle pb-1 text-xs">
-          <button
-            onClick={() => setActiveTab("oauth")}
-            className={`px-3 py-1.5 rounded-md font-medium transition-all ${
-              activeTab === "oauth"
-                ? "bg-textPrimary text-surface"
-                : "text-textSecondary hover:text-textPrimary"
-            }`}
-          >
-            Google Sign-In (OAuth 2.0)
-          </button>
           <button
             onClick={() => setActiveTab("token")}
             className={`px-3 py-1.5 rounded-md font-medium transition-all ${
@@ -163,7 +170,17 @@ export const GoogleConnectModal: React.FC<GoogleConnectModalProps> = ({
                 : "text-textSecondary hover:text-textPrimary"
             }`}
           >
-            Direct Access Token
+            Fastest: OAuth Playground Token (No Setup)
+          </button>
+          <button
+            onClick={() => setActiveTab("oauth")}
+            className={`px-3 py-1.5 rounded-md font-medium transition-all ${
+              activeTab === "oauth"
+                ? "bg-textPrimary text-surface"
+                : "text-textSecondary hover:text-textPrimary"
+            }`}
+          >
+            Google Cloud Client ID
           </button>
         </div>
 
@@ -174,35 +191,101 @@ export const GoogleConnectModal: React.FC<GoogleConnectModalProps> = ({
           </div>
         )}
 
+        {/* Tab 1: Fastest OAuth Playground Token */}
+        {activeTab === "token" && (
+          <form onSubmit={handleSyncWithToken} className="space-y-3.5 text-xs">
+            <div className="p-3 rounded-lg bg-subtle border border-borderSubtle space-y-2">
+              <span className="font-semibold text-textPrimary text-xs flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-500" />
+                How to get your live Google Classroom token (30 Seconds):
+              </span>
+              <ol className="text-[11px] text-textSecondary space-y-1 list-decimal list-inside leading-relaxed">
+                <li>
+                  Open{" "}
+                  <a
+                    href="https://developers.google.com/oauthplayground"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline text-textPrimary font-semibold"
+                  >
+                    Google OAuth Playground ↗
+                  </a>
+                </li>
+                <li>
+                  Scroll down the left list to <strong>Google Classroom API v1</strong> and check:
+                  <div className="mt-1 font-mono text-[10px] bg-canvas p-1 rounded border border-borderSubtle text-textPrimary flex items-center justify-between">
+                    <span>.../auth/classroom.courses.readonly</span>
+                    <button
+                      type="button"
+                      onClick={copyScopes}
+                      className="text-[10px] text-textSecondary hover:text-textPrimary flex items-center gap-1 px-1.5 py-0.5 rounded bg-subtle"
+                    >
+                      {copiedScope ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                      <span>{copiedScope ? "Copied" : "Copy Scope"}</span>
+                    </button>
+                  </div>
+                </li>
+                <li>
+                  Click the blue <strong>Authorize APIs</strong> button and sign in with{" "}
+                  <strong>{studentEmail}</strong>.
+                </li>
+                <li>
+                  Click <strong>Exchange authorization code for tokens</strong>, then copy the{" "}
+                  <strong>Access token</strong> (starts with <code>ya29...</code>).
+                </li>
+              </ol>
+            </div>
+
+            <div>
+              <label className="block text-textSecondary mb-1 font-medium">
+                Paste Google Access Token (ya29...)
+              </label>
+              <textarea
+                rows={2}
+                required
+                placeholder="ya29.a0AfH6SM..."
+                value={manualToken}
+                onChange={(e) => setManualToken(e.target.value)}
+                className="w-full px-3 py-2 rounded-md bg-canvas border border-borderSubtle text-textPrimary placeholder-textMuted focus:outline-none focus:border-borderStrong font-mono text-[11px]"
+              />
+            </div>
+
+            <div className="flex items-center gap-2 pt-1">
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="flex-1 py-2 px-4 rounded-md bg-textPrimary hover:opacity-90 text-surface font-semibold text-xs transition-opacity flex items-center justify-center gap-2"
+              >
+                {isLoading ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Syncing Live Google Classroom...</span>
+                  </>
+                ) : (
+                  <>
+                    <Key className="w-3.5 h-3.5" />
+                    <span>Sync Live Courses & Deadlines</span>
+                  </>
+                )}
+              </button>
+              <button
+                type="button"
+                onClick={onClose}
+                className="py-2 px-3 rounded-md bg-subtle hover:bg-borderSubtle text-textSecondary transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Tab 2: Google Cloud Client ID */}
         {activeTab === "oauth" && (
           <div className="space-y-3.5 text-xs">
             <div>
               <label className="block text-textSecondary mb-1 font-medium">
-                Student FAST-NU Email
+                Google Cloud Client ID
               </label>
-              <input
-                type="email"
-                value={studentEmail}
-                onChange={(e) => setStudentEmail(e.target.value)}
-                className="w-full px-3 py-2 rounded-md bg-canvas border border-borderSubtle text-textPrimary font-mono text-xs focus:outline-none focus:border-borderStrong"
-              />
-            </div>
-
-            <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="block text-textSecondary font-medium">
-                  Google Cloud Client ID
-                </label>
-                <a
-                  href="https://console.cloud.google.com/apis/credentials"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-[11px] text-textSecondary hover:text-textPrimary flex items-center gap-0.5 underline"
-                >
-                  <span>Google Console</span>
-                  <ExternalLink className="w-2.5 h-2.5" />
-                </a>
-              </div>
               <input
                 type="text"
                 placeholder="YOUR_CLIENT_ID.apps.googleusercontent.com"
@@ -210,18 +293,17 @@ export const GoogleConnectModal: React.FC<GoogleConnectModalProps> = ({
                 onChange={(e) => setClientId(e.target.value)}
                 className="w-full px-3 py-2 rounded-md bg-canvas border border-borderSubtle text-textPrimary placeholder-textMuted focus:outline-none focus:border-borderStrong font-mono text-[11px]"
               />
-              <p className="text-[11px] text-textMuted mt-1 leading-relaxed">
-                Created under Google Cloud Console with Google Classroom API enabled.
-              </p>
-            </div>
-
-            <div className="p-3 rounded-lg bg-subtle border border-borderSubtle space-y-1">
-              <span className="font-semibold text-textPrimary text-[11px] flex items-center gap-1.5">
-                <Lock className="w-3 h-3 text-textSecondary" />
-                Official OAuth Security Notice:
-              </span>
-              <p className="text-[11px] text-textSecondary leading-relaxed">
-                Google protects university accounts with strict OAuth 2.0. You never enter your password into ClassPulse. Clicking below will open Google's authentic sign-in dialog for <strong>{studentEmail}</strong>.
+              <p className="text-[11px] text-textMuted mt-1">
+                To create a permanent Client ID: go to{" "}
+                <a
+                  href="https://console.cloud.google.com/apis/credentials"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="underline text-textPrimary"
+                >
+                  Google Cloud Console
+                </a>
+                , create OAuth 2.0 Client ID (Web Application), and add <code>http://localhost:3000</code> to Authorized Origins.
               </p>
             </div>
 
@@ -235,12 +317,12 @@ export const GoogleConnectModal: React.FC<GoogleConnectModalProps> = ({
                 {isLoading ? (
                   <>
                     <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Connecting Google Classroom...</span>
+                    <span>Connecting...</span>
                   </>
                 ) : (
                   <>
                     <ShieldCheck className="w-4 h-4" />
-                    <span>Authorize with Google ({studentEmail})</span>
+                    <span>Launch Google Sign-In</span>
                   </>
                 )}
               </button>
@@ -253,63 +335,6 @@ export const GoogleConnectModal: React.FC<GoogleConnectModalProps> = ({
               </button>
             </div>
           </div>
-        )}
-
-        {activeTab === "token" && (
-          <form onSubmit={handleSyncWithToken} className="space-y-3 text-xs">
-            <div>
-              <label className="block text-textSecondary mb-1 font-medium">
-                Google OAuth Bearer Access Token
-              </label>
-              <textarea
-                rows={3}
-                required
-                placeholder="ya29.a0AfH6SM..."
-                value={manualToken}
-                onChange={(e) => setManualToken(e.target.value)}
-                className="w-full px-3 py-2 rounded-md bg-canvas border border-borderSubtle text-textPrimary placeholder-textMuted focus:outline-none focus:border-borderStrong font-mono text-[11px]"
-              />
-              <p className="text-[11px] text-textMuted mt-1">
-                You can generate a temporary test token at{" "}
-                <a
-                  href="https://developers.google.com/oauthplayground"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="underline text-textSecondary hover:text-textPrimary"
-                >
-                  OAuth 2.0 Playground
-                </a>{" "}
-                with scope <code>https://www.googleapis.com/auth/classroom.courses.readonly</code>.
-              </p>
-            </div>
-
-            <div className="flex items-center gap-2 pt-2">
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="flex-1 py-2 px-4 rounded-md bg-textPrimary hover:opacity-90 text-surface font-semibold text-xs transition-opacity flex items-center justify-center gap-2"
-              >
-                {isLoading ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Fetching live coursework...</span>
-                  </>
-                ) : (
-                  <>
-                    <Key className="w-3.5 h-3.5" />
-                    <span>Fetch Live Google Classroom</span>
-                  </>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={onClose}
-                className="py-2 px-3 rounded-md bg-subtle hover:bg-borderSubtle text-textSecondary transition-colors"
-              >
-                Cancel
-              </button>
-            </div>
-          </form>
         )}
       </div>
     </div>
