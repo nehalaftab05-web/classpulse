@@ -8,7 +8,8 @@ import {
   ExternalLink,
   Info,
   CheckCircle2,
-  GraduationCap
+  GraduationCap,
+  RefreshCw
 } from "lucide-react";
 import { Navbar } from "../components/Navbar";
 import { DeadlineRadar } from "../components/DeadlineRadar";
@@ -22,7 +23,7 @@ import {
   mockTimetableSlots, 
   getMockAssignments 
 } from "../data/mockClassroom";
-import { Assignment, TaskStatus, UserProfile } from "../types/classroom";
+import { Assignment, TaskStatus, UserProfile, Course } from "../types/classroom";
 import { generateIcsCalendar, downloadIcsFile } from "../lib/calendarExport";
 
 export default function Home() {
@@ -34,6 +35,7 @@ export default function Home() {
     isDemoMode: false,
   });
   const [isDemoMode, setIsDemoMode] = useState<boolean>(false);
+  const [courses, setCourses] = useState<Course[]>(mockCourses);
   const [assignments, setAssignments] = useState<Assignment[]>(getMockAssignments());
   const [activeTab, setActiveTab] = useState<"timetable" | "kanban" | "courses">("timetable");
   const [isGoogleModalOpen, setIsGoogleModalOpen] = useState<boolean>(false);
@@ -70,7 +72,7 @@ export default function Home() {
       prev.map((a) => (a.id === id ? { ...a, status: newStatus } : a))
     );
     if (newStatus === "completed") {
-      showToast("Assignment turned in to Google Classroom!");
+      showToast("Assignment marked complete!");
     }
   };
 
@@ -98,15 +100,24 @@ export default function Home() {
     showToast("Downloaded FAST_NU_BCS_5E_Schedule.ics for Apple / Google Calendar");
   };
 
-  const handleConnectSuccess = (email: string) => {
+  const handleLiveSyncSuccess = (data: {
+    courses: Course[];
+    assignments: Assignment[];
+    email: string;
+  }) => {
     setUser({
       name: "Nehal Aftab",
-      email: email || "f240518@cfd.nu.edu.pk",
+      email: data.email || "f240518@cfd.nu.edu.pk",
       institution: "FAST-NU CFD Campus (BCS-5E)",
       isDemoMode: false,
     });
-    setIsDemoMode(false);
-    showToast(`Google Classroom synced with ${email}`);
+    if (data.courses.length > 0) {
+      setCourses(data.courses);
+    }
+    if (data.assignments.length > 0) {
+      setAssignments(data.assignments);
+    }
+    showToast(`Synced ${data.assignments.length} live tasks from Google Classroom!`);
   };
 
   return (
@@ -151,7 +162,7 @@ export default function Home() {
                 </span>
               </div>
               <p className="text-xs text-textSecondary mt-0.5">
-                Student ID: <code className="font-mono text-[11px] text-textPrimary font-semibold">f240518@cfd.nu.edu.pk</code> • Section BCS-5E (Fall 2026)
+                Student: <code className="font-mono text-[11px] text-textPrimary font-semibold">f240518@cfd.nu.edu.pk</code> • Fall 2026 Timetable
               </p>
             </div>
           </div>
@@ -165,9 +176,10 @@ export default function Home() {
             </button>
             <button
               onClick={() => setIsGoogleModalOpen(true)}
-              className="px-3 py-1.5 rounded-md bg-textPrimary text-surface text-xs font-medium hover:opacity-90 transition-opacity"
+              className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-textPrimary text-surface text-xs font-medium hover:opacity-90 transition-opacity"
             >
-              Sync Classroom
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Sync Live GCR</span>
             </button>
           </div>
         </div>
@@ -204,7 +216,7 @@ export default function Home() {
             }`}
           >
             <CheckSquare className="w-3.5 h-3.5" />
-            <span>Coursework & Quizzes</span>
+            <span>Coursework & Quizzes ({assignments.length})</span>
           </button>
 
           <button
@@ -216,13 +228,13 @@ export default function Home() {
             }`}
           >
             <BookOpen className="w-3.5 h-3.5" />
-            <span>Enrolled Subjects ({mockCourses.length})</span>
+            <span>Enrolled Subjects ({courses.length})</span>
           </button>
         </div>
 
         {/* Tab Views */}
         {activeTab === "timetable" && (
-          <TimetableGrid slots={mockTimetableSlots} courses={mockCourses} />
+          <TimetableGrid slots={mockTimetableSlots} courses={courses} />
         )}
 
         {activeTab === "kanban" && (
@@ -245,7 +257,7 @@ export default function Home() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {mockCourses.map((c) => (
+              {courses.map((c) => (
                 <div
                   key={c.id}
                   className="p-4 rounded-lg border border-borderSubtle bg-canvas space-y-2.5"
@@ -301,7 +313,7 @@ export default function Home() {
       <GoogleConnectModal
         isOpen={isGoogleModalOpen}
         onClose={() => setIsGoogleModalOpen(false)}
-        onConnectSuccess={handleConnectSuccess}
+        onSyncSuccess={handleLiveSyncSuccess}
       />
     </div>
   );
